@@ -6,7 +6,8 @@
     "AsyncFileDialogsMixin",
     "FlashbackFFmpegFrameRecorderMixin",
     "CustomImGuiImplGlfwMixin",
-    "ReplayUIMobileCursorMixin"
+    "ReplayUIMobileCursorMixin",
+    "CustomImGuiImplB3DMixin"
   ],
   "injectors": {
     "defaultRequire": 1
