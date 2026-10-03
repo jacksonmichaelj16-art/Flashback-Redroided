@@ -70,7 +70,7 @@ If something doesn't work, open an issue and include:
 
 ## License
 
-Flashback Redroided is licensed with a custom license, see [LICENSE](https://github.com/whaltermc/Flashback-Redroided/blob/master/LICENSE.md.
+Flashback Redroided is licensed with a custom license, see [LICENSE](https://github.com/whaltermc/Flashback-Redroided/blob/main/LICENSE).
 
 ## Credits & Dependencies
 [Flashback](https://modrinth.com/mod/flashback), see [LICENSE](https://github.com/Moulberry/Flashback/blob/master/LICENSE.md)
