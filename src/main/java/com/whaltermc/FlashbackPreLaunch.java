@@ -136,7 +136,12 @@ public class FlashbackPreLaunch implements PreLaunchEntrypoint {
                         && bytes != null
                         && bytes.length > 0) {
 
-                    return FlashbackTransformer.transform(bytes);
+                    try {
+                        return FlashbackTransformer.transform(bytes);
+                    } catch (Throwable t) {
+                        LOGGER.error("Failed to transform {}", name, t);
+                        return result;
+                    }
                 }
 
                 return result;
@@ -164,11 +169,8 @@ public class FlashbackPreLaunch implements PreLaunchEntrypoint {
             return false;
         }
 
-        return className.startsWith(
-                "com.moulberry.flashback"
-        ) || className.startsWith(
-                "com.moulberry."
-        );
+        return className.startsWith("com.moulberry.")
+                || className.startsWith("org.bytedeco.javacv.");
     }
 
     private static Object getFieldValue(

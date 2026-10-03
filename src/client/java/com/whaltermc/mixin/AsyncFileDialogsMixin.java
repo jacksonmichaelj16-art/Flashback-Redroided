@@ -2,21 +2,19 @@ package com.whaltermc.mixin;
 
 import com.moulberry.flashback.Flashback;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.sdl.SDLDialog;
-import org.lwjgl.sdl.SDL_DialogFileFilter;
-import org.lwjgl.sdl.SDLError;
-import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
-@Mixin(targets = "com.moulberry.flashback.utils.AsyncFileDialogs")
+@Mixin(
+        targets = "com.moulberry.flashback.exporting.AsyncFileDialogs",
+        remap = false
+)
 public class AsyncFileDialogsMixin {
 
-    private static File flashbackRedroided$getDefaultExportDir() {
+    private static File flashbackRedroided$getExportDir() {
         File dir = new File(
                 Minecraft.getInstance().gameDirectory,
                 "flashback/exports"
@@ -24,7 +22,7 @@ public class AsyncFileDialogsMixin {
 
         if (!dir.exists() && !dir.mkdirs()) {
             Flashback.LOGGER.warn(
-                    "Could not create default export directory: {}",
+                    "Failed to create Flashback export directory: {}",
                     dir.getAbsolutePath()
             );
         }
@@ -32,28 +30,24 @@ public class AsyncFileDialogsMixin {
         return dir;
     }
 
-    private static String flashbackRedroided$filter(CharSequence in) {
-        return flashbackRedroided$filterLT20(
-                in.toString()
-                        .replace("'", "")
-                        .replace("\"", "")
-                        .replace("$", "")
-                        .replace("`", "")
-        );
-    }
-
-    private static String flashbackRedroided$filterLT20(CharSequence in) {
-        StringBuilder builder = new StringBuilder();
-
-        for (int i = 0; i < in.length(); i++) {
-            char c = in.charAt(i);
-
-            if (c >= 32 || c == '\n') {
-                builder.append(c);
-            }
+    private static String flashbackRedroided$addExtension(
+            String name,
+            String... filters
+    ) {
+        if (name == null || name.isEmpty()) {
+            name = "export";
         }
 
-        return builder.toString();
+        if (filters != null
+                && filters.length == 1
+                && filters[0] != null
+                && !filters[0].isEmpty()
+                && !name.contains(".")) {
+
+            name += "." + filters[0];
+        }
+
+        return name;
     }
 
     @Overwrite
@@ -63,60 +57,42 @@ public class AsyncFileDialogsMixin {
             String filterDescription,
             String... filters
     ) {
-        if (com.moulberry.flashback.utils.AsyncFileDialogs.hasDialog()) {
-            return CompletableFuture.completedFuture(null);
-        }
+        File exportDir =
+                flashbackRedroided$getExportDir();
 
-        CompletableFuture<String> future = new CompletableFuture<>();
+        String fileName =
+                flashbackRedroided$addExtension(
+                        defaultName,
+                        filters
+                );
 
-        String defaultLocation =
-                flashbackRedroided$filter(defaultPath + "/" + defaultName);
+        File output =
+                new File(exportDir, fileName);
 
-        String autoExtension =
-                filters.length == 1 ? filters[0] : null;
-
-        long window =
-                Minecraft.getInstance().getWindow().handle();
-
-        String name = defaultName;
-
-        if (name != null
-                && autoExtension != null
-                && name.indexOf('.') < 0) {
-            name = name + "." + autoExtension;
-        }
-
-        File fallback = new File(
-                flashbackRedroided$getDefaultExportDir(),
-                name != null ? name : "export"
+        Flashback.LOGGER.info(
+                "Flashback Redroided: Android save path: {}",
+                output.getAbsolutePath()
         );
 
-        Flashback.LOGGER.warn(
-                "Using default export path: {}",
-                fallback.getAbsolutePath()
+        return CompletableFuture.completedFuture(
+                output.getAbsolutePath()
         );
-
-        future.complete(fallback.getAbsolutePath());
-        return future;
     }
 
     @Overwrite
     public static CompletableFuture<String> openFolderDialog(
             String defaultPath
     ) {
-        if (com.moulberry.flashback.utils.AsyncFileDialogs.hasDialog()) {
-            return CompletableFuture.completedFuture(null);
-        }
+        File exportDir =
+                flashbackRedroided$getExportDir();
 
-        File fallback = flashbackRedroided$getDefaultExportDir();
-
-        Flashback.LOGGER.warn(
-                "Using default export folder: {}",
-                fallback.getAbsolutePath()
+        Flashback.LOGGER.info(
+                "Flashback Redroided: Android folder path: {}",
+                exportDir.getAbsolutePath()
         );
 
         return CompletableFuture.completedFuture(
-                fallback.getAbsolutePath()
+                exportDir.getAbsolutePath()
         );
     }
 }
