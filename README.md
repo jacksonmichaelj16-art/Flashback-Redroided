@@ -70,10 +70,13 @@ If something doesn't work, open an issue and include:
 
 ## License
 
-Flashback Redroided is licensed with a custom license, see [LICENSE](https://github.com/whaltermc/Flashback-Redroided/blob/master/LICENSE.md.
+Flashback Redroided is licensed with a custom license, see [LICENSE](https://github.com/whaltermc/Flashback-Redroided/blob/main/LICENSE).
 
 ## Credits & Dependencies
 [Flashback](https://modrinth.com/mod/flashback), see [LICENSE](https://github.com/Moulberry/Flashback/blob/master/LICENSE.md)
+
 [ImGui-Java](https://github.com/SpaiR/imgui-java), see [LICENSE](https://github.com/SpaiR/imgui-java/blob/main/LICENSE)
+
 [JavaCpp](https://github.com/bytedeco/javacpp), see [LICENSE](https://github.com/bytedeco/javacpp/blob/master/LICENSE.txt)
+
 [FFMPEG](https://github.com/ffmpeg/ffmpeg), see [LICENSE](https://www.ffmpeg.org/legal.html)
