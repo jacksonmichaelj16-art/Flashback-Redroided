@@ -169,8 +169,11 @@ public class FlashbackPreLaunch implements PreLaunchEntrypoint {
             return false;
         }
 
-        return className.startsWith("com.moulberry.")
-                || className.startsWith("org.bytedeco.javacv.");
+        return className.startsWith(
+                "com.moulberry.flashback"
+        ) || className.startsWith(
+                "com.moulberry."
+        );
     }
 
     private static Object getFieldValue(

@@ -38,6 +38,9 @@ public final class NativeBootstrap {
 
         System.setProperty("org.bytedeco.javacpp.loadlibraries", "false");
 
+        loadSystemLib("mediandk");
+        loadSystemLib("android");
+
         try {
             ModContainer mod = FabricLoader.getInstance().getModContainer(MOD_ID)
                     .orElseThrow(() -> new IllegalStateException("mod container not found: " + MOD_ID));
@@ -106,5 +109,29 @@ public final class NativeBootstrap {
                 }
             }
         }
+    }
+
+    private static void loadSystemLib(String name) {
+        try {
+            System.loadLibrary(name);
+            LOGGER.info("Loaded system library: {}", name);
+            return;
+        } catch (Throwable ignored) {
+        }
+        String[] paths = {
+            "/system/lib64/lib" + name + ".so",
+            "/system/lib/lib" + name + ".so",
+            "/apex/com.android.media/lib64/lib" + name + ".so",
+            "/apex/com.android.media.swcodec/lib64/lib" + name + ".so"
+        };
+        for (String path : paths) {
+            try {
+                System.load(path);
+                LOGGER.info("Loaded system library from {}", path);
+                return;
+            } catch (Throwable ignored) {
+            }
+        }
+        LOGGER.warn("Could not load system library {} (NDK MediaCodec may be unavailable)", name);
     }
 }

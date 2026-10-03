@@ -1,8 +1,6 @@
 package com.whaltermc.mixin;
 
 import com.whaltermc.MobileCompat;
-import imgui.moulberry92.ImGui;
-import imgui.moulberry92.ImGuiIO;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,40 +21,8 @@ public abstract class CustomImGuiImplGlfwMixin {
             cancellable = true,
             remap = false
     )
-    private void flashbackRedroided$updateKeyModifiers(
-            long window,
-            CallbackInfo ci
-    ) {
+    private void flashbackRedroided$updateKeyModifiers(long window, CallbackInfo ci) {
         ci.cancel();
-
-        try {
-            if (!ImGui.getCurrentContext().isValidPtr()) {
-                return;
-            }
-
-            ImGuiIO io = ImGui.getIO();
-
-            io.addKeyEvent(
-                    4096,
-                    flashbackRedroided$down(window, 341, 345)
-            );
-
-            io.addKeyEvent(
-                    8192,
-                    flashbackRedroided$down(window, 340, 344)
-            );
-
-            io.addKeyEvent(
-                    16384,
-                    flashbackRedroided$down(window, 342, 346)
-            );
-
-            io.addKeyEvent(
-                    32768,
-                    flashbackRedroided$down(window, 343, 347)
-            );
-        } catch (Throwable ignored) {
-        }
     }
 
     @Inject(
@@ -66,23 +32,16 @@ public abstract class CustomImGuiImplGlfwMixin {
             remap = false,
             require = 0
     )
-    private static void flashbackRedroided$keyToImGui192(
+    private void flashbackRedroided$updateImGui192KeyValues(
             int glfwKey,
             CallbackInfoReturnable<Integer> cir
     ) {
-        cir.setReturnValue(
-                com.whaltermc.FlashbackImGuiKeyMapper.map(
-                        cir.getReturnValue()
-                )
-        );
+        int imguiKey = cir.getReturnValue();
+        cir.setReturnValue(com.whaltermc.FlashbackImGuiKeyMapper.map(imguiKey));
     }
 
     @Redirect(
-            method = {
-                    "ungrab",
-                    "setGrabbed",
-                    "updateMouseCursor"
-            },
+            method = {"ungrab", "setGrabbed"},
             at = @At(
                     value = "INVOKE",
                     target = "Lorg/lwjgl/glfw/GLFW;glfwSetInputMode(JII)V",
@@ -91,11 +50,7 @@ public abstract class CustomImGuiImplGlfwMixin {
             remap = false,
             require = 0
     )
-    private void flashbackRedroided$cursorMode(
-            long window,
-            int mode,
-            int value
-    ) {
+    private void flashbackRedroided$setGrabCursorMode(long window, int mode, int value) {
         if (mode == GLFW.GLFW_CURSOR) {
             MobileCompat.requestCursorMode(window, value);
         } else {
@@ -104,10 +59,25 @@ public abstract class CustomImGuiImplGlfwMixin {
     }
 
     @Redirect(
-            method = {
-                    "ungrab",
-                    "updateMousePosAndButtons"
-            },
+            method = "updateMouseCursor",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lorg/lwjgl/glfw/GLFW;glfwSetInputMode(JII)V",
+                    remap = false
+            ),
+            remap = false,
+            require = 0
+    )
+    private void flashbackRedroided$setCursorModeIfChanged(long window, int mode, int value) {
+        if (mode == GLFW.GLFW_CURSOR) {
+            MobileCompat.requestCursorMode(window, value);
+        } else {
+            GLFW.glfwSetInputMode(window, mode, value);
+        }
+    }
+
+    @Redirect(
+            method = {"ungrab", "updateMousePosAndButtons"},
             at = @At(
                     value = "INVOKE",
                     target = "Lorg/lwjgl/glfw/GLFW;glfwSetCursorPos(JDD)V",
@@ -116,19 +86,12 @@ public abstract class CustomImGuiImplGlfwMixin {
             remap = false,
             require = 0
     )
-    private void flashbackRedroided$cursorPos(
-            long window,
-            double x,
-            double y
-    ) {
+    private void flashbackRedroided$setCursorPos(long window, double x, double y) {
         MobileCompat.setCursorPos(window, x, y);
     }
 
     @Redirect(
-            method = {
-                    "updateReleaseAllKeys",
-                    "updateMouseCursor"
-            },
+            method = {"updateReleaseAllKeys", "updateMouseCursor"},
             at = @At(
                     value = "INVOKE",
                     target = "Lorg/lwjgl/glfw/GLFW;glfwSetCursor(JJ)V",
@@ -137,19 +100,7 @@ public abstract class CustomImGuiImplGlfwMixin {
             remap = false,
             require = 0
     )
-    private void flashbackRedroided$cursorShape(
-            long window,
-            long cursor
-    ) {
+    private void flashbackRedroided$setCursorShape(long window, long cursor) {
         MobileCompat.setCursorShape(window, cursor);
-    }
-
-    private static boolean flashbackRedroided$down(
-            long window,
-            int left,
-            int right
-    ) {
-        return GLFW.glfwGetKey(window, left) == GLFW.GLFW_PRESS
-                || GLFW.glfwGetKey(window, right) == GLFW.GLFW_PRESS;
     }
 }

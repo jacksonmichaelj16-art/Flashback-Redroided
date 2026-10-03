@@ -30,33 +30,11 @@ public final class FlashbackTransformer {
             "glfwGetWindowAttrib(JI)I",
             "glfwGetMouseButton(JI)I",
             "glfwGetInputMode(JI)I",
+            "glfwSetInputMode(JII)V",
+            "glfwSetCursorPos(JDD)V",
+            "glfwSetCursor(JJ)V",
             "glfwGetCursorPos(J[D[D)V",
             "glfwGetCursorPos(JLjava/nio/DoubleBuffer;Ljava/nio/DoubleBuffer;)V"
-    );
-
-    private static final String FFMPEG_PKG = "org/bytedeco/ffmpeg/";
-    private static final String FF_COMPAT = "com/whaltermc/FFmpegCompat";
-    private static final String CTX = "org/bytedeco/ffmpeg/avcodec/AVCodecContext";
-    private static final String FRAME = "org/bytedeco/ffmpeg/avutil/AVFrame";
-    private static final String AVUTIL = "org/bytedeco/ffmpeg/global/avutil";
-    private static final String SWR = "org/bytedeco/ffmpeg/global/swresample";
-    private static final String SWR_CTX = "org/bytedeco/ffmpeg/swresample/SwrContext";
-
-    private record FfRule(boolean virtual, String compatName) {}
-
-    private static final java.util.Map<String, FfRule> FF_RULES = java.util.Map.ofEntries(
-            java.util.Map.entry(CTX + ".channels(I)L" + CTX + ";", new FfRule(true, "ctxSetChannels")),
-            java.util.Map.entry(CTX + ".channels()I", new FfRule(true, "ctxGetChannels")),
-            java.util.Map.entry(CTX + ".channel_layout(J)L" + CTX + ";", new FfRule(true, "ctxSetLayout")),
-            java.util.Map.entry(CTX + ".channel_layout()J", new FfRule(true, "ctxGetLayout")),
-            java.util.Map.entry(FRAME + ".channels(I)L" + FRAME + ";", new FfRule(true, "frameSetChannels")),
-            java.util.Map.entry(FRAME + ".channels()I", new FfRule(true, "frameGetChannels")),
-            java.util.Map.entry(FRAME + ".channel_layout(J)L" + FRAME + ";", new FfRule(true, "frameSetLayout")),
-            java.util.Map.entry(FRAME + ".channel_layout()J", new FfRule(true, "frameGetLayout")),
-            java.util.Map.entry(AVUTIL + ".av_get_default_channel_layout(I)J", new FfRule(false, "defaultLayout")),
-            java.util.Map.entry(AVUTIL + ".av_get_channel_layout_nb_channels(J)I", new FfRule(false, "nbChannels")),
-            java.util.Map.entry(SWR + ".swr_alloc_set_opts(L" + SWR_CTX + ";JIIJIIILorg/bytedeco/javacpp/Pointer;)L" + SWR_CTX + ";",
-                    new FfRule(false, "swrAllocSetOpts"))
     );
 
     private FlashbackTransformer() {}
@@ -68,9 +46,8 @@ public final class FlashbackTransformer {
 
         boolean hasImGui = contains(classBytes, FROM);
         boolean hasGlfw = contains(classBytes, GLFW);
-        boolean hasFfmpeg = contains(classBytes, FFMPEG_PKG);
 
-        if (!hasImGui && !hasGlfw && !hasFfmpeg) {
+        if (!hasImGui && !hasGlfw) {
             return classBytes;
         }
 
@@ -78,7 +55,6 @@ public final class FlashbackTransformer {
         ClassWriter writer = new ClassWriter(reader, 0);
 
         ClassVisitor chain = new GlfwGuard(writer);
-        chain = new FfmpegRedirect(chain);
         chain = new KeyRedirect(chain);
 
         if (hasImGui) {
@@ -137,40 +113,6 @@ public final class FlashbackTransformer {
                 case "isKeyDown", "isKeyReleased" -> desc.equals("(I)Z");
                 case "isKeyPressed" -> desc.equals("(I)Z") || desc.equals("(IZ)Z");
                 default -> false;
-            };
-        }
-    }
-
-    private static final class FfmpegRedirect extends ClassVisitor {
-
-        FfmpegRedirect(ClassVisitor next) {
-            super(Opcodes.ASM9, next);
-        }
-
-        @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor,
-                                         String signature, String[] exceptions) {
-            MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
-            if (mv == null) return null;
-
-            return new MethodVisitor(Opcodes.ASM9, mv) {
-                @Override
-                public void visitMethodInsn(int opcode, String owner, String mName,
-                                            String mDesc, boolean itf) {
-                    if (owner.startsWith(FFMPEG_PKG)
-                            && (opcode == Opcodes.INVOKEVIRTUAL || opcode == Opcodes.INVOKESTATIC)) {
-                        FfRule rule = FF_RULES.get(owner + "." + mName + mDesc);
-                        if (rule != null && rule.virtual() == (opcode == Opcodes.INVOKEVIRTUAL)) {
-                            String newDesc = rule.virtual()
-                                    ? "(L" + owner + ";" + mDesc.substring(1)
-                                    : mDesc;
-                            super.visitMethodInsn(Opcodes.INVOKESTATIC, FF_COMPAT,
-                                    rule.compatName(), newDesc, false);
-                            return;
-                        }
-                    }
-                    super.visitMethodInsn(opcode, owner, mName, mDesc, itf);
-                }
             };
         }
     }

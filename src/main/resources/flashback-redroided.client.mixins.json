@@ -1,12 +1,14 @@
 {
   "required": true,
   "package": "com.whaltermc.mixin",
-  "compatibilityLevel": "JAVA_25",
+  "compatibilityLevel": "JAVA_21",
   "client": [
     "AsyncFileDialogsMixin",
     "FlashbackFFmpegFrameRecorderMixin",
     "CustomImGuiImplGlfwMixin",
-    "ReplayUIMobileCursorMixin"
+    "ReplayUIMobileCursorMixin",
+    "VideoCodecMixin",
+    "SaveableFramebufferMixin"
   ],
   "injectors": {
     "defaultRequire": 1

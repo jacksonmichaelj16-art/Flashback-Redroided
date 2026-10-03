@@ -139,7 +139,6 @@ public final class MobileCompat {
         if (before == null || before != mode) {
             trace("MODE " + (before == null ? "?" : modeName(before)) + " -> " + modeName(mode));
         }
-        
         Integer already = CURSOR_MODES.get(window);
         if (MOBILE && already != null && already == mode) {
             return;
