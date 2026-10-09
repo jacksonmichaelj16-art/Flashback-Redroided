@@ -5,6 +5,7 @@
   "client": [
     "AsyncFileDialogsMixin",
     "FlashbackFFmpegFrameRecorderMixin",
+    "SaveableFramebufferMixin",
     "CustomImGuiImplGlfwMixin",
     "ReplayUIMobileCursorMixin",
     "CustomImGuiImplB3DMixin",

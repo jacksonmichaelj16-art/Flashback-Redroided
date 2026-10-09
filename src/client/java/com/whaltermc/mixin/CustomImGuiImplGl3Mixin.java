@@ -29,6 +29,8 @@ import java.nio.ByteBuffer;
  *  2. The atlas has only mip level 0. We pin BASE_LEVEL/MAX_LEVEL to 0 so the texture is
  *     complete even if a mipmapped min-filter ends up applied to it.
  */
+// Flashback versions using the B3D backend do not include this class.
+@Pseudo
 @Mixin(
         targets = "com.moulberry.flashback.editor.ui.CustomImGuiImplGl3",
         remap = false

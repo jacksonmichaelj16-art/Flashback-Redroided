@@ -1,12 +1,13 @@
 package com.whaltermc.mixin;
 
 import org.spongepowered.asm.mixin.Pseudo;
-import com.mojang.blaze3d.systems.RenderPass;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArgs;
 import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 
+// Flashback uses this backend only on newer Minecraft versions.
+@Pseudo
 @Mixin(
         targets = "com.moulberry.flashback.editor.ui.CustomImGuiImplB3D",
         remap = false
