@@ -2,20 +2,31 @@ package com.whaltermc.mixin;
 
 import com.moulberry.flashback.exporting.FlashbackFFmpegFrameRecorder;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.whaltermc.EncoderBackpressure;
 import org.bytedeco.ffmpeg.avcodec.AVCodec;
 import org.bytedeco.ffmpeg.avcodec.AVCodecContext;
+import org.bytedeco.ffmpeg.avcodec.AVPacket;
+import org.bytedeco.ffmpeg.avformat.AVStream;
+import org.bytedeco.ffmpeg.avutil.AVFrame;
 import org.bytedeco.ffmpeg.avutil.AVDictionary;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import static org.bytedeco.ffmpeg.global.avcodec.avcodec_find_encoder_by_name;
+import static org.bytedeco.ffmpeg.global.avcodec.av_packet_rescale_ts;
+import static org.bytedeco.ffmpeg.global.avcodec.av_packet_unref;
+import static org.bytedeco.ffmpeg.global.avcodec.avcodec_receive_packet;
+import static org.bytedeco.ffmpeg.global.avcodec.avcodec_send_frame;
+import static org.bytedeco.ffmpeg.global.avutil.AVERROR_EAGAIN;
+import static org.bytedeco.ffmpeg.global.avutil.AVERROR_EOF;
 import static org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_NV12;
 import static org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_YUV420P;
 import static org.bytedeco.ffmpeg.global.avutil.av_dict_set;
@@ -31,6 +42,57 @@ public abstract class FlashbackFFmpegFrameRecorderMixin {
 
     @Shadow
     private Map<String, String> videoOptions;
+
+    @Shadow
+    private AVPacket video_pkt;
+
+    @Shadow
+    private AVStream video_st;
+
+    @Shadow
+    private void writePacket(AVPacket packet) throws FlashbackFFmpegFrameRecorder.Exception {
+        throw new AssertionError("Mixin shadow");
+    }
+
+    @Redirect(
+            method = "recordImage",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lorg/bytedeco/ffmpeg/global/avcodec;avcodec_send_frame(" +
+                            "Lorg/bytedeco/ffmpeg/avcodec/AVCodecContext;" +
+                            "Lorg/bytedeco/ffmpeg/avutil/AVFrame;)I"
+            )
+    )
+    private int flashbackRedroided$sendVideoFrame(AVCodecContext context, AVFrame frame)
+            throws FlashbackFFmpegFrameRecorder.Exception {
+        // Retrying this native call keeps the original frame data and PTS intact.
+        // recordImage advances the PTS only after the frame has been accepted.
+        return EncoderBackpressure.sendFrame(
+                () -> avcodec_send_frame(context, frame),
+                () -> flashbackRedroided$drainVideoPacket(context), AVERROR_EAGAIN());
+    }
+
+    @Unique
+    private boolean flashbackRedroided$drainVideoPacket(AVCodecContext context)
+            throws FlashbackFFmpegFrameRecorder.Exception {
+        av_packet_unref(video_pkt);
+        try {
+            int result = avcodec_receive_packet(context, video_pkt);
+            if (result == AVERROR_EAGAIN() || result == AVERROR_EOF()) {
+                return false;
+            }
+            if (result < 0) {
+                throw new FlashbackFFmpegFrameRecorder.Exception(
+                        "avcodec_receive_packet() error " + result + ": Error during video encoding.");
+            }
+            av_packet_rescale_ts(video_pkt, context.time_base(), video_st.time_base());
+            video_pkt.stream_index(video_st.index());
+            writePacket(video_pkt);
+            return true;
+        } finally {
+            av_packet_unref(video_pkt);
+        }
+    }
 
     @Inject(
             method = "startUnsafe",
