@@ -7,7 +7,8 @@
     "FlashbackFFmpegFrameRecorderMixin",
     "CustomImGuiImplGlfwMixin",
     "ReplayUIMobileCursorMixin",
-    "CustomImGuiImplB3DMixin"
+    "CustomImGuiImplB3DMixin",
+    "CustomImGuiImplGl3Mixin"
   ],
   "injectors": {
     "defaultRequire": 1
