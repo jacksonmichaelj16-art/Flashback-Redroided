@@ -1,5 +1,6 @@
 package com.whaltermc.mixin;
 
+import org.spongepowered.asm.mixin.Pseudo;
 import com.whaltermc.MobileCompat;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
