@@ -1,0 +1,19 @@
+name: Build
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+      - run: chmod +x gradlew
+      - run: ./gradlew shadowJar --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flashback-redroided
+          path: build/libs/*.jar
